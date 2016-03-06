@@ -1,218 +1,67 @@
-'use strict';
-
-/**
- * @ngdoc module
- * @name angular-bootstrap-select.extra
- * @description
- * Angular bootstrap-select extra.
- */
-
+// supply open and close without load bootstrap.js
 angular.module('angular-bootstrap-select.extra', [])
-  .directive('dropdownToggle', [dropdownToggleDirective])
-  .directive('dropdownClose', [dropdownCloseDirective]);
+  .directive('toggle', function () {
+    return {
+      restrict: 'ACE',
+      link: function (scope, element, attrs) {
+        // prevent directive from attaching itself to everything that defines a toggle attribute
+        if (!element.hasClass('selectpicker') && !attrs.selectpicker && element[0].localName !== 'selectpicker')) {
+          return;
+        }
 
-/**
- * @ngdoc directive
- * @name dropdownToggle
- * @restrict ACE
- *
- * @description
- * This extra directive provide dropdown toggle specifically to bootstrap-select without loading bootstrap.js.
- *
- * @usage
- * ```html
- * <div class="dropdown-toggle">
- *   <select class="selectpicker">
- *      <option value="">Select one</option>
- *      <option>Mustard</option>
- *      <option>Ketchup</option>
- *      <option>Relish</option>
- *   </select>
- * </div>
- *
- * <div dropdown-toggle>
- *   <select class="selectpicker">
- *      <option value="">Select one</option>
- *      <option>Mustard</option>
- *      <option>Ketchup</option>
- *      <option>Relish</option>
- *   </select>
- * </div>
- *
- * <dropdown-toggle>
- *   <select class="selectpicker">
- *      <option value="">Select one</option>
- *      <option>Mustard</option>
- *      <option>Ketchup</option>
- *      <option>Relish</option>
- *   </select>
- * </dropdown-toggle>
- * ```
- */
+        var target = element.parent();
+        var toggleFn = function () {
+          target.toggleClass('open');
+        };
+        var hideFn = function () {
+          target.removeClass('open');
+        };
 
-function dropdownToggleDirective() {
-  return {
-    restrict: 'ACE',
-    priority: 101,
-    link: function (scope, element, attrs) {
-      var toggleFn = function (e) {
-        var parent = angular.element(this).parent();
+        element.on('click', toggleFn);
+        element.next().on('click', hideFn);
 
-        angular.element('.bootstrap-select.open', element)
-          .not(parent)
-          .removeClass('open');
-
-        parent.toggleClass('open');
-      };
-
-      element.on('click.bootstrapSelect', '.dropdown-toggle', toggleFn);
-
-      scope.$on('$destroy', function () {
-        element.off('.bootstrapSelect');
-      });
-    }
-  };
-}
-
-/**
- * @ngdoc directive
- * @name dropdownClear
- * @restrict ACE
- *
- * @description
- * This extra directive provide the closing of ALL open dropdowns clicking away
- *
- * @usage
- * ```html
- * <div class="dropdown-close">
- *   <select class="selectpicker">
- *      <option value="">Select one</option>
- *      <option>Mustard</option>
- *      <option>Ketchup</option>
- *      <option>Relish</option>
- *   </select>
- * </div>
- *
- * <div dropdown-close>
- *   <select class="selectpicker">
- *      <option value="">Select one</option>
- *      <option>Mustard</option>
- *      <option>Ketchup</option>
- *      <option>Relish</option>
- *   </select>
- * </div>
- *
- * <dropdown-close>
- *   <select class="selectpicker">
- *      <option value="">Select one</option>
- *      <option>Mustard</option>
- *      <option>Ketchup</option>
- *      <option>Relish</option>
- *   </select>
- * </dropdown-close>
- * ```
- */
-
-function dropdownCloseDirective() {
-  return {
-    restrict: 'ACE',
-    priority: 101,
-    link: function (scope, element, attrs) {
-      var hideFn = function (e) {
-        var parent = e.target.tagName !== 'A' && angular.element(e.target).parents('.bootstrap-select');
-
-        angular.element('.bootstrap-select.open', element)
-          .not(parent)
-          .removeClass('open');
-      };
-
-      angular.element(document).on('click.bootstrapSelect', hideFn);
-
-      scope.$on('$destroy', function () {
-        angular.element(document).off('.bootstrapSelect');
-      });
-    }
-  };
-}
-
-/**
- * @ngdoc module
- * @name angular-bootstrap-select
- * @description
- * Angular bootstrap-select.
- */
+        scope.$on('$destroy', function () {
+          element.off('click', toggleFn);
+          element.next().off('click', hideFn);
+        });
+      }
+    };
+  });
 
 angular.module('angular-bootstrap-select', [])
-  .directive('selectpicker', ['$parse', '$timeout', selectpickerDirective]);
+  .directive('selectpicker', ['$parse', function ($parse) {
+    return {
+      restrict: 'A',
+      require: '?ngModel',
+      priority: 10,
+      compile: function (tElement, tAttrs, transclude) {
+        tElement.selectpicker($parse(tAttrs.selectpicker)());
+        tElement.selectpicker('refresh');
+        
+        return function (scope, element, attrs, ngModel) {
+          if (!ngModel) return;
 
-/**
- * @ngdoc directive
- * @name selectpicker
- * @restrict A
- *
- * @param {object} selectpicker Directive attribute to configure bootstrap-select, full configurable params can be found in [bootstrap-select docs](http://silviomoreto.github.io/bootstrap-select/).
- * @param {string} ngModel Assignable angular expression to data-bind to.
- *
- * @description
- * The selectpicker directive is used to wrap bootstrap-select.
- *
- * @usage
- * ```html
- * <select selectpicker ng-model="model">
- *   <option value="">Select one</option>
- *   <option>Mustard</option>
- *   <option>Ketchup</option>
- *   <option>Relish</option>
- * </select>
- *
- * <select selectpicker="{dropupAuto:false}" ng-model="model">
- *   <option value="">Select one</option>
- *   <option>Mustard</option>
- *   <option>Ketchup</option>
- *   <option>Relish</option>
- * </select>
- * ```
- */
+          if (attrs.ngDisabled) {
+            scope.$watch(attrs.ngDisabled, function (newVal, oldVal) {
+              element.prop('disabled', newVal);
+              element.selectpicker('refresh');
+            });
+          }
 
-function selectpickerDirective($parse, $timeout) {
-  return {
-    restrict: 'A',
-    priority: 1000,
-    link: function (scope, element, attrs) {
-      function refresh(newVal) {
-        scope.$applyAsync(function () {
-          if (attrs.ngOptions && /track by/.test(attrs.ngOptions)) element.val(newVal);
-          element.selectpicker('refresh');
-        });
-      }
-
-      attrs.$observe('spTheme', function (val) {
-        $timeout(function () {
-          element.data('selectpicker').$button.removeClass(function (i, c) {
-            return (c.match(/(^|\s)?btn-\S+/g) || []).join(' ');
+          scope.$watch(attrs.ngModel, function (newVal, oldVal) {
+            scope.$evalAsync(function () {
+              if (!attrs.ngOptions || /track by/.test(attrs.ngOptions)) element.val(newVal);
+              element.selectpicker('refresh');
+            });
           });
-          element.selectpicker('setStyle', val);
-        });
-      });
 
-      $timeout(function () {
-        element.selectpicker($parse(attrs.selectpicker)());
-        element.selectpicker('refresh');
-      });
-
-      if (attrs.ngModel) {
-        scope.$watch(attrs.ngModel, refresh, true);
+          ngModel.$render = function () {
+            scope.$evalAsync(function () {
+              element.selectpicker('refresh');
+            });
+          }
+        };
       }
 
-      if (attrs.ngDisabled) {
-        scope.$watch(attrs.ngDisabled, refresh, true);
-      }
-
-      scope.$on('$destroy', function () {
-        $timeout(function () {
-          element.selectpicker('destroy');
-        });
-      });
-    }
-  };
-}
+    };
+  }]);
