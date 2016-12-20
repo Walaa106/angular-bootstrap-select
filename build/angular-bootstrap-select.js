@@ -8,7 +8,7 @@ angular.module('angular-bootstrap-select.extra', [])
         if (!element.hasClass('selectpicker')) {
           return;
         }
-        
+        var element = $('.selectpicker');
         var target = element.parent();
         var toggleFn = function () {
           target.toggleClass('open');
