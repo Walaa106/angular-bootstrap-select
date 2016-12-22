@@ -36,6 +36,7 @@ angular.module('angular-bootstrap-select', [])
       priority: 10,
       compile: function (tElement, tAttrs, transclude) {
         return function (scope, element, attrs, ngModel) {
+          var element = $('.selectpicker');
           if (!ngModel) return;
 
           scope.$watch(attrs.ngModel, function (newVal, oldVal) {
