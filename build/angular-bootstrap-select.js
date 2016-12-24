@@ -39,12 +39,12 @@ angular.module('angular-bootstrap-select', [])
           var element = $('.selectpicker');
           if (!ngModel) return;
 
-          scope.$watch(attrs.ngModel, function (newVal, oldVal) {
-            scope.$evalAsync(function () {
-              if (!attrs.ngOptions || /track by/.test(attrs.ngOptions)) element.val(newVal);
-              element.selectpicker('refresh');
-            });
-          });
+//           scope.$watch(attrs.ngModel, function (newVal, oldVal) {
+//             scope.$evalAsync(function () {
+//               if (!attrs.ngOptions || /track by/.test(attrs.ngOptions)) element.val(newVal);
+//               element.selectpicker('refresh');
+//             });
+//           });
 
           ngModel.$render = function () {
             scope.$evalAsync(function () {
