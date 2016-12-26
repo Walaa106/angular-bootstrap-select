@@ -2,13 +2,13 @@
 angular.module('angular-bootstrap-select.extra', [])
   .directive('toggle', function () {
     return {
-      restrict: 'ACE',
+      restrict: 'A',
       link: function (scope, element, attrs) {
         // prevent directive from attaching itself to everything that defines a toggle attribute
-        if (!element.hasClass('selectpicker') && !attrs.selectpicker && element[0].localName !== 'selectpicker')) {
+        if (!element.hasClass('selectpicker')) {
           return;
         }
-
+        var element = $('.selectpicker');
         var target = element.parent();
         var toggleFn = function () {
           target.toggleClass('open');
@@ -29,39 +29,46 @@ angular.module('angular-bootstrap-select.extra', [])
   });
 
 angular.module('angular-bootstrap-select', [])
-  .directive('selectpicker', ['$parse', function ($parse) {
+  .directive('selectpicker', ['$timeout', '$parse', function ($parse, $timeout) {
     return {
       restrict: 'A',
       require: '?ngModel',
       priority: 10,
-      compile: function (tElement, tAttrs, transclude) {
-        tElement.selectpicker($parse(tAttrs.selectpicker)());
-        tElement.selectpicker('refresh');
-        
-        return function (scope, element, attrs, ngModel) {
-          if (!ngModel) return;
-
-          if (attrs.ngDisabled) {
-            scope.$watch(attrs.ngDisabled, function (newVal, oldVal) {
-              element.prop('disabled', newVal);
-              element.selectpicker('refresh');
-            });
-          }
-
-          scope.$watch(attrs.ngModel, function (newVal, oldVal) {
-            scope.$evalAsync(function () {
-              if (!attrs.ngOptions || /track by/.test(attrs.ngOptions)) element.val(newVal);
-              element.selectpicker('refresh');
-            });
+      link: function (scope, element, attrs) {
+        element = $('.selectpicker');
+        function refresh(newVal) {
+          scope.$applyAsync(function () {
+            element.selectpicker('refresh');
           });
+        }
 
-          ngModel.$render = function () {
-            scope.$evalAsync(function () {
-              element.selectpicker('refresh');
+        attrs.$observe('spTheme', function (val) {
+          $timeout(function () {
+            element.data('selectpicker').$button.removeClass(function (i, c) {
+              return (c.match(/(^|\s)?btn-\S+/g) || []).join(' ');
             });
-          }
-        };
-      }
+            element.selectpicker('setStyle', val);
+          });
+        });
 
+        $timeout(function () {
+          element.selectpicker($parse(attrs.selectpicker)());
+          element.selectpicker('refresh');
+        });
+
+        if (attrs.ngModel) {
+          scope.$watch(attrs.ngModel, refresh, true);
+        }
+
+        if (attrs.ngDisabled) {
+          scope.$watch(attrs.ngDisabled, refresh, true);
+        }
+
+        scope.$on('$destroy', function () {
+          $timeout(function () {
+            element.selectpicker('destroy');
+          });
+        });
+      }
     };
   }]);
